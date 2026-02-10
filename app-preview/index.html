@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM Budgeting Tool - Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --font-sans: 'DM Sans', system-ui, sans-serif;
+      --font-display: 'Fraunces', Georgia, serif;
+      --color-brand-50: #f0f9ff;
+      --color-brand-100: #e0f2fe;
+      --color-brand-200: #bae6fd;
+      --color-brand-300: #7dd3fc;
+      --color-brand-400: #38bdf8;
+      --color-brand-500: #0ea5e9;
+      --color-brand-600: #0284c7;
+      --color-brand-700: #0369a1;
+      --color-brand-800: #075985;
+      --color-brand-900: #0c4a6e;
+      --color-slate-50: #f8fafc;
+      --color-slate-100: #f1f5f9;
+      --color-slate-200: #e2e8f0;
+      --color-slate-300: #cbd5e1;
+      --color-slate-400: #94a3b8;
+      --color-slate-500: #64748b;
+      --color-slate-600: #475569;
+      --color-slate-700: #334155;
+      --color-slate-800: #1e293b;
+      --color-slate-900: #0f172a;
+      --radius-xl: 1rem;
+      --radius-2xl: 1.5rem;
+      --min-height-touch: 44px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      color: #1e293b;
+      background: #f8fafc;
+      line-height: 1.5;
+    }
+
+    .container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-slate-50);
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      border-bottom: 1px solid var(--color-slate-200);
+      background: white;
+    }
+
+    .header-content {
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .header-content {
+        padding: 0 1.5rem;
+      }
+    }
+
+    .header-inner {
+      display: flex;
+      height: 3.5rem;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .header-inner {
+        height: 4rem;
+      }
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-slate-900);
+      text-decoration: none;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    @media (max-width: 767px) {
+      nav {
+        display: none;
+      }
+    }
+
+    .nav-link {
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      text-decoration: none;
+      min-height: var(--min-height-touch);
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .nav-link.active {
+      background: var(--color-brand-50);
+      color: var(--color-brand-700);
+    }
+
+    .nav-link:not(.active) {
+      color: var(--color-slate-600);
+    }
+
+    .nav-link:not(.active):hover {
+      background: var(--color-slate-100);
+      color: var(--color-slate-900);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .user-name {
+      font-size: 0.875rem;
+      color: var(--color-slate-600);
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 640px) {
+      .user-name {
+        display: none;
+      }
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+      border-radius: var(--radius-xl);
+      transition: all 0.2s;
+      min-height: var(--min-height-touch);
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0.625rem 1rem;
+      text-decoration: none;
+    }
+
+    .btn:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--color-brand-500);
+    }
+
+    .btn-primary {
+      background: var(--color-brand-600);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--color-brand-700);
+    }
+
+    .btn-secondary {
+      background: var(--color-slate-200);
+      color: var(--color-slate-800);
+    }
+
+    .btn-secondary:hover {
+      background: var(--color-slate-300);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--color-slate-700);
+    }
+
+    .btn-ghost:hover {
+      background: var(--color-slate-100);
+    }
+
+    .btn-sm {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    /* Main content */
+    main {
+      flex: 1;
+      max-width: 72rem;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem 1rem;
+    }
+
+    @media (min-width: 640px) {
+      main {
+        padding: 1.5rem 1.5rem;
+      }
+    }
+
+    /* Cards */
+    .card {
+      border-radius: var(--radius-2xl);
+      border: 1px solid var(--color-slate-200);
+      background: white;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--color-slate-100);
+    }
+
+    @media (min-width: 640px) {
+      .card-header {
+        padding: 1rem 1.5rem;
+      }
+    }
+
+    .card-content {
+      padding: 1rem 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .card-content {
+        padding: 1rem 1.5rem;
+      }
+    }
+
+    /* Typography */
+    h1 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-slate-900);
+      margin-bottom: 0.5rem;
+    }
+
+    @media (min-width: 640px) {
+      h1 {
+        font-size: 2rem;
+      }
+    }
+
+    h2 {
+      font-weight: 600;
+      color: var(--color-slate-900);
+      font-size: 1.125rem;
+    }
+
+    /* Layout utilities */
+    .space-y-6 > * + * {
+      margin-top: 1.5rem;
+    }
+
+    .space-y-4 > * + * {
+      margin-top: 1rem;
+    }
+
+    .space-y-2 > * + * {
+      margin-top: 0.5rem;
+    }
+
+    .flex {
+      display: flex;
+    }
+
+    .flex-col {
+      flex-direction: column;
+    }
+
+    .items-center {
+      align-items: center;
+    }
+
+    .justify-between {
+      justify-content: space-between;
+    }
+
+    .gap-2 {
+      gap: 0.5rem;
+    }
+
+    .gap-4 {
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .sm\:flex-row {
+        flex-direction: row;
+      }
+      .sm\:items-center {
+        align-items: center;
+      }
+    }
+
+    /* Grid */
+    .grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .grid-cols-1 {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    @media (min-width: 640px) {
+      .sm\:grid-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .lg\:grid-cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .lg\:grid-cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    /* Lists */
+    .list {
+      list-style: none;
+    }
+
+    .list-item {
+      padding: 1rem 0;
+    }
+
+    .list-divide > * + * {
+      border-top: 1px solid var(--color-slate-100);
+    }
+
+    .list-link {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 1rem;
+      margin: 0 -1rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.2s;
+    }
+
+    .list-link:hover {
+      background: var(--color-slate-50);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+
+    .tab {
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-xl);
+      font-size: 0.875rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+      background: var(--color-slate-100);
+      color: var(--color-slate-700);
+    }
+
+    .tab.active {
+      background: var(--color-brand-600);
+      color: white;
+    }
+
+    .tab:hover:not(.active) {
+      background: var(--color-slate-200);
+    }
+
+    /* Stats */
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--color-slate-600);
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--color-slate-900);
+    }
+
+    @media (min-width: 640px) {
+      .stat-value {
+        font-size: 2rem;
+      }
+    }
+
+    /* Text utilities */
+    .text-sm {
+      font-size: 0.875rem;
+    }
+
+    .text-xs {
+      font-size: 0.75rem;
+    }
+
+    .text-slate-600 {
+      color: var(--color-slate-600);
+    }
+
+    .text-slate-500 {
+      color: var(--color-slate-500);
+    }
+
+    .text-slate-900 {
+      color: var(--color-slate-900);
+    }
+
+    .text-green-700 {
+      color: #15803d;
+    }
+
+    .text-red-700 {
+      color: #b91c1c;
+    }
+
+    .font-medium {
+      font-weight: 500;
+    }
+
+    .font-semibold {
+      font-weight: 600;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: var(--color-slate-100);
+      color: var(--color-slate-700);
+    }
+
+    .badge.active {
+      background: var(--color-brand-100);
+      color: var(--color-brand-700);
+    }
+
+    .badge.archived {
+      background: var(--color-slate-200);
+      color: var(--color-slate-600);
+    }
+
+    /* Hidden */
+    .hidden {
+      display: none;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 2px solid var(--color-brand-500);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--color-slate-200);
+      background: white;
+      padding: 2rem 1rem;
+      text-align: center;
+      color: var(--color-slate-600);
+      font-size: 0.875rem;
+    }
+
+    .footer-content {
+      max-width: 72rem;
+      margin: 0 auto;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-link {
+      color: var(--color-slate-600);
+      text-decoration: none;
+    }
+
+    .footer-link:hover {
+      color: var(--color-slate-900);
+    }
+
+    /* Page header */
+    .page-header {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (min-width: 640px) {
+      .page-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    /* Back link */
+    .back-link {
+      font-size: 0.875rem;
+      color: var(--color-brand-600);
+      text-decoration: none;
+      margin-bottom: 0.25rem;
+      display: inline-block;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Empty state */
+    .empty-state {
+      padding: 2rem;
+      text-align: center;
+      color: var(--color-slate-600);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-content">
+        <div class="header-inner">
+          <a href="#" class="logo" onclick="showView('dashboard'); return false;">PM Budgeting</a>
+          <nav>
+            <a href="#" class="nav-link active" onclick="showView('dashboard'); return false;">Dashboard</a>
+            <a href="#" class="nav-link" onclick="showView('projects'); return false;">Projects</a>
+            <a href="#" class="nav-link" onclick="showView('settings'); return false;">Settings</a>
+          </nav>
+          <div class="user-info">
+            <span class="user-name">John Doe</span>
+            <button class="btn btn-ghost btn-sm">Sign out</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <!-- Dashboard View -->
+      <div id="view-dashboard" class="view">
+        <div class="page-header">
+          <h1>Dashboard</h1>
+          <button class="btn btn-primary" onclick="showView('project-form'); return false;">New project</button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 space-y-4" style="margin-bottom: 2rem;">
+          <div class="card">
+            <div class="card-content" style="padding: 1.5rem;">
+              <p class="stat-label">Active projects</p>
+              <p class="stat-value">4</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-content" style="padding: 1.5rem;">
+              <p class="stat-label">Total baseline + overhead</p>
+              <p class="stat-value">$2,470,000</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-content" style="padding: 1.5rem;">
+              <p class="stat-label">Archived</p>
+              <p class="stat-value">1</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Recent projects</h2>
+          </div>
+          <div class="card-content">
+            <ul class="list list-divide">
+              <li class="list-item">
+                <a href="#" class="list-link" onclick="showProjectDetail('1'); return false;">
+                  <span>
+                    <span class="font-medium text-slate-900">Downtown Office Renovation</span>
+                  </span>
+                  <span class="text-sm text-slate-600">$850,000 · active</span>
+                </a>
+              </li>
+              <li class="list-item">
+                <a href="#" class="list-link" onclick="showProjectDetail('2'); return false;">
+                  <span>
+                    <span class="font-medium text-slate-900">Residential Complex Phase 2</span>
+                  </span>
+                  <span class="text-sm text-slate-600">$1,200,000 · active</span>
+                </a>
+              </li>
+              <li class="list-item">
+                <a href="#" class="list-link" onclick="showProjectDetail('3'); return false;">
+                  <span>
+                    <span class="font-medium text-slate-900">Warehouse Expansion</span>
+                  </span>
+                  <span class="text-sm text-slate-600">$400,000 · active</span>
+                </a>
+              </li>
+              <li class="list-item">
+                <a href="#" class="list-link" onclick="showProjectDetail('4'); return false;">
+                  <span>
+                    <span class="font-medium text-slate-900">Electrical Installation</span>
+                  </span>
+                  <span class="text-sm text-slate-600">$20,000 · active</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Projects List View -->
+      <div id="view-projects" class="view hidden">
+        <div class="page-header">
+          <h1>Projects</h1>
+          <button class="btn btn-primary" onclick="showView('project-form'); return false;">New project</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>All projects</h2>
+          </div>
+          <div class="card-content">
+            <ul class="list list-divide">
+              <li class="list-item">
+                <a href="#" class="list-link" onclick="showProjectDetail('1'); return false;">
+                  <div>
+                    <span class="font-medium text-slate-900" style="display: block;">Downtown Office Renovation</span>
+                    <span class="text-sm text-slate-500">Jan 15, 2025 – Jun 30, 2025 · active</span>
+                  </div>
+                  <span class="text-slate-700 font-medium">$850,000</span>
+                </a>
+              </li>
+              <li class="list-item">
+                <a href="#" class="list-link" onclick="showProjectDetail('2'); return false;">
+                  <div>
+                    <span class="font-medium text-slate-900" style="display: block;">Residential Complex Phase 2</span>
+                    <span class="text-sm text-slate-500">Feb 1, 2025 – Dec 31, 2025 · active</span>
+                  </div>
+                  <span class="text-slate-700 font-medium">$1,200,000</span>
+                </a>
+              </li>
+              <li class="list-item">
+                <a href="#" class="list-link" onclick="showProjectDetail('3'); return false;">
+                  <div>
+                    <span class="font-medium text-slate-900" style="display: block;">Warehouse Expansion</span>
+                    <span class="text-sm text-slate-500">Mar 1, 2025 – Sep 30, 2025 · active</span>
+                  </div>
+                  <span class="text-slate-700 font-medium">$400,000</span>
+                </a>
+              </li>
+              <li class="list-item">
+                <a href="#" class="list-link" onclick="showProjectDetail('4'); return false;">
+                  <div>
+                    <span class="font-medium text-slate-900" style="display: block;">Electrical Installation</span>
+                    <span class="text-sm text-slate-500">Jan 10, 2025 – Mar 31, 2025 · active</span>
+                  </div>
+                  <span class="text-slate-700 font-medium">$20,000</span>
+                </a>
+              </li>
+              <li class="list-item">
+                <a href="#" class="list-link">
+                  <div>
+                    <span class="font-medium text-slate-900" style="display: block;">Retail Store Buildout</span>
+                    <span class="text-sm text-slate-500">Oct 1, 2024 – Dec 31, 2024 · archived</span>
+                  </div>
+                  <span class="text-slate-700 font-medium">$250,000</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project Detail View -->
+      <div id="view-project-detail" class="view hidden">
+        <div class="page-header">
+          <div>
+            <a href="#" class="back-link" onclick="showView('projects'); return false;">← Projects</a>
+            <h1 id="project-name">Downtown Office Renovation</h1>
+            <p class="text-slate-600 text-sm" id="project-description">Complete renovation of 5-story office building in downtown district</p>
+          </div>
+          <button class="btn btn-secondary">Edit project</button>
+        </div>
+
+        <div class="tabs" style="margin-bottom: 1.5rem;">
+          <button class="tab active" onclick="showTab('overview')">Overview</button>
+          <button class="tab" onclick="showTab('costs')">Costs</button>
+          <button class="tab" onclick="showTab('change-orders')">Change orders</button>
+          <button class="tab" onclick="showTab('forecast')">Forecast</button>
+          <button class="tab" onclick="showTab('logs')">Logs</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="tab-overview" class="tab-content">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 space-y-4" style="margin-bottom: 1.5rem;">
+            <div class="card">
+              <div class="card-content" style="padding: 1rem;">
+                <p class="stat-label">Total budget</p>
+                <p class="stat-value" style="font-size: 1.25rem;">$850,000</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-content" style="padding: 1rem;">
+                <p class="stat-label">Cost to date</p>
+                <p class="stat-value" style="font-size: 1.25rem;">$425,000</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-content" style="padding: 1rem;">
+                <p class="stat-label">Remaining</p>
+                <p class="stat-value" style="font-size: 1.25rem;">$425,000</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-content" style="padding: 1rem;">
+                <p class="stat-label">Burn rate (est.)</p>
+                <p class="stat-value" style="font-size: 1.25rem;">$8,500/day</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>AI insight</h2>
+            </div>
+            <div class="card-content">
+              <button class="btn btn-secondary" onclick="showAIInsight()">Explain this project's financial health</button>
+              <div id="ai-summary" style="margin-top: 1rem; padding: 1rem; border-radius: var(--radius-xl); background: var(--color-slate-50); color: var(--color-slate-700); display: none;">
+                <p>This project is currently on track with 50% of the budget utilized. The burn rate of $8,500/day suggests the project will complete within budget if current spending patterns continue. Key areas to monitor include material costs and labor expenses, which have been consistent over the past month.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Costs Tab -->
+        <div id="tab-costs" class="tab-content hidden">
+          <div class="card">
+            <div class="card-header" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
+              <h2>Costs</h2>
+              <button class="btn btn-primary">Add cost</button>
+            </div>
+            <div class="card-content">
+              <ul class="list list-divide">
+                <li class="list-item" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 0;">
+                  <div>
+                    <span class="font-medium text-slate-900">Materials</span>
+                    <span class="text-slate-500 text-sm" style="margin-left: 0.5rem;">· ABC Supply Co.</span>
+                    <p class="text-sm text-slate-600">Steel beams and concrete</p>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="font-medium">$125,000</span>
+                    <span class="text-sm text-slate-500">Jan 20, 2025</span>
+                  </div>
+                </li>
+                <li class="list-item" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 0;">
+                  <div>
+                    <span class="font-medium text-slate-900">Labor</span>
+                    <span class="text-slate-500 text-sm" style="margin-left: 0.5rem;">· Construction Team A</span>
+                    <p class="text-sm text-slate-600">February payroll</p>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="font-medium">$95,000</span>
+                    <span class="text-sm text-slate-500">Feb 1, 2025</span>
+                  </div>
+                </li>
+                <li class="list-item" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 0;">
+                  <div>
+                    <span class="font-medium text-slate-900">Equipment</span>
+                    <span class="text-slate-500 text-sm" style="margin-left: 0.5rem;">· Rent-A-Crane Inc.</span>
+                    <p class="text-sm text-slate-600">Crane rental for 2 weeks</p>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="font-medium">$45,000</span>
+                    <span class="text-sm text-slate-500">Jan 25, 2025</span>
+                  </div>
+                </li>
+                <li class="list-item" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 0;">
+                  <div>
+                    <span class="font-medium text-slate-900">Materials</span>
+                    <span class="text-slate-500 text-sm" style="margin-left: 0.5rem;">· XYZ Building Supplies</span>
+                    <p class="text-sm text-slate-600">Windows and doors</p>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="font-medium">$160,000</span>
+                    <span class="text-sm text-slate-500">Feb 10, 2025</span>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Change Orders Tab -->
+        <div id="tab-change-orders" class="tab-content hidden">
+          <div class="card">
+            <div class="card-header" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
+              <h2>Change orders</h2>
+              <button class="btn btn-primary">Add change order</button>
+            </div>
+            <div class="card-content">
+              <ul class="list list-divide">
+                <li class="list-item" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 0;">
+                  <div>
+                    <span class="font-medium text-green-700">+ $25,000</span>
+                    <p class="text-sm text-slate-600">Additional electrical work for new server room</p>
+                    <span class="text-xs text-slate-500">approved</span>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary btn-sm">Approve</button>
+                    <button class="btn btn-sm" style="background: #dc2626; color: white;">Reject</button>
+                  </div>
+                </li>
+                <li class="list-item" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 0;">
+                  <div>
+                    <span class="font-medium text-red-700">− $10,000</span>
+                    <p class="text-sm text-slate-600">Removed custom lighting fixtures</p>
+                    <span class="text-xs text-slate-500">pending</span>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary btn-sm">Approve</button>
+                    <button class="btn btn-sm" style="background: #dc2626; color: white;">Reject</button>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forecast Tab -->
+        <div id="tab-forecast" class="tab-content hidden">
+          <div class="space-y-6">
+            <div class="card">
+              <div class="card-header">
+                <h2>Current metrics</h2>
+              </div>
+              <div class="card-content">
+                <div class="grid grid-cols-1 sm:grid-cols-2 space-y-2">
+                  <p><span class="text-slate-600">Cost to date:</span> <span class="font-medium">$425,000</span></p>
+                  <p><span class="text-slate-600">Burn rate:</span> <span class="font-medium">$8,500/day</span></p>
+                  <p><span class="text-slate-600">Remaining budget:</span> <span class="font-medium">$425,000</span></p>
+                  <p><span class="text-slate-600">Projected total:</span> <span class="font-medium">$850,000</span></p>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
+                <h2>Save snapshot</h2>
+                <button class="btn btn-primary">Save forecast</button>
+              </div>
+              <div class="card-content">
+                <p class="text-sm text-slate-600">
+                  Store current metrics as a versioned snapshot. AI summary is included if you ran "Explain financial health" in Overview.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="tab-logs" class="tab-content hidden">
+          <div class="card">
+            <div class="card-header" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
+              <h2>Audit log</h2>
+              <button class="btn btn-secondary">Export CSV</button>
+            </div>
+            <div class="card-content">
+              <ul class="list list-divide">
+                <li class="list-item" style="padding: 0.5rem 0; font-size: 0.875rem;">
+                  <span class="text-slate-500">Feb 10, 2025</span>
+                  {' · '}
+                  <span class="font-medium">cost_added</span>
+                  {' · '}
+                  <span class="text-slate-600">user123</span>
+                  <span class="text-slate-400" style="margin-left: 0.25rem;"> {"{\"amount\": 160000}"}</span>
+                </li>
+                <li class="list-item" style="padding: 0.5rem 0; font-size: 0.875rem;">
+                  <span class="text-slate-500">Feb 5, 2025</span>
+                  {' · '}
+                  <span class="font-medium">change_order_approved</span>
+                  {' · '}
+                  <span class="text-slate-600">user123</span>
+                  <span class="text-slate-400" style="margin-left: 0.25rem;"> {"{\"changeOrderId\": \"co1\"}"}</span>
+                </li>
+                <li class="list-item" style="padding: 0.5rem 0; font-size: 0.875rem;">
+                  <span class="text-slate-500">Feb 1, 2025</span>
+                  {' · '}
+                  <span class="font-medium">cost_added</span>
+                  {' · '}
+                  <span class="text-slate-600">user123</span>
+                  <span class="text-slate-400" style="margin-left: 0.25rem;"> {"{\"amount\": 95000}"}</span>
+                </li>
+                <li class="list-item" style="padding: 0.5rem 0; font-size: 0.875rem;">
+                  <span class="text-slate-500">Jan 25, 2025</span>
+                  {' · '}
+                  <span class="font-medium">cost_added</span>
+                  {' · '}
+                  <span class="text-slate-600">user123</span>
+                  <span class="text-slate-400" style="margin-left: 0.25rem;"> {"{\"amount\": 45000}"}</span>
+                </li>
+                <li class="list-item" style="padding: 0.5rem 0; font-size: 0.875rem;">
+                  <span class="text-slate-500">Jan 20, 2025</span>
+                  {' · '}
+                  <span class="font-medium">cost_added</span>
+                  {' · '}
+                  <span class="text-slate-600">user123</span>
+                  <span class="text-slate-400" style="margin-left: 0.25rem;"> {"{\"amount\": 125000}"}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings View -->
+      <div id="view-settings" class="view hidden">
+        <div class="page-header">
+          <h1>Settings</h1>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h2>User Guide</h2>
+          </div>
+          <div class="card-content">
+            <p class="text-slate-600">Settings and user guide content would appear here in the full application.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-links">
+          <a href="#" class="footer-link">Terms & Conditions</a>
+          <a href="#" class="footer-link">Privacy Policy</a>
+        </div>
+        <p>© 2025 Techephi. All rights reserved.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Mock project data
+    const projects = {
+      '1': {
+        name: 'Downtown Office Renovation',
+        description: 'Complete renovation of 5-story office building in downtown district',
+        totalBudget: '$850,000',
+        costToDate: '$425,000',
+        remaining: '$425,000',
+        burnRate: '$8,500/day',
+        costs: [
+          { category: 'Materials', vendor: 'ABC Supply Co.', description: 'Steel beams and concrete', amount: '$125,000', date: 'Jan 20, 2025' },
+          { category: 'Labor', vendor: 'Construction Team A', description: 'February payroll', amount: '$95,000', date: 'Feb 1, 2025' },
+          { category: 'Equipment', vendor: 'Rent-A-Crane Inc.', description: 'Crane rental for 2 weeks', amount: '$45,000', date: 'Jan 25, 2025' },
+          { category: 'Materials', vendor: 'XYZ Building Supplies', description: 'Windows and doors', amount: '$160,000', date: 'Feb 10, 2025' }
+        ]
+      },
+      '2': {
+        name: 'Residential Complex Phase 2',
+        description: 'Construction of 50-unit residential complex',
+        totalBudget: '$1,200,000',
+        costToDate: '$600,000',
+        remaining: '$600,000',
+        burnRate: '$12,000/day',
+        costs: []
+      },
+      '3': {
+        name: 'Warehouse Expansion',
+        description: 'Expansion of existing warehouse facility',
+        totalBudget: '$400,000',
+        costToDate: '$150,000',
+        remaining: '$250,000',
+        burnRate: '$5,000/day',
+        costs: []
+      },
+      '4': {
+        name: 'Electrical Installation',
+        description: 'Complete electrical installation and wiring for commercial building',
+        totalBudget: '$20,000',
+        costToDate: '$14,253.88',
+        remaining: '$5,746.12',
+        burnRate: '$475/day',
+        costs: [
+          { category: 'Material', vendor: '', description: 'Electrical materials and supplies', amount: '$7,954.53', date: 'Jan 15, 2025' },
+          { category: 'Equipment', vendor: '', description: 'Tools and equipment rental', amount: '$1,184.82', date: 'Jan 16, 2025' },
+          { category: 'Labor', vendor: '', description: 'Electrician labor costs', amount: '$2,930.00', date: 'Jan 20, 2025' },
+          { category: 'Per Diem', vendor: '', description: 'Daily per diem allowance', amount: '$450.00', date: 'Jan 22, 2025' },
+          { category: 'Gas', vendor: '', description: 'Vehicle fuel expenses', amount: '$410.06', date: 'Jan 25, 2025' },
+          { category: 'Food', vendor: '', description: 'Meal expenses', amount: '$457.73', date: 'Jan 25, 2025' },
+          { category: 'Hotel', vendor: '', description: 'Accommodation expenses', amount: '$866.74', date: 'Jan 25, 2025' }
+        ]
+      }
+    };
+
+    // View management
+    function showView(viewName) {
+      // Hide all views
+      document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+      
+      // Show selected view
+      const view = document.getElementById(`view-${viewName}`);
+      if (view) {
+        view.classList.remove('hidden');
+      }
+
+      // Update nav links
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+      
+      const navMap = {
+        'dashboard': 'dashboard',
+        'projects': 'projects',
+        'settings': 'settings'
+      };
+      
+      if (navMap[viewName]) {
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+          if (link.textContent.toLowerCase() === navMap[viewName]) {
+            link.classList.add('active');
+          }
+        });
+      }
+    }
+
+    // Tab management
+    function showTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      
+      // Show selected tab
+      const tab = document.getElementById(`tab-${tabName}`);
+      if (tab) {
+        tab.classList.remove('hidden');
+      }
+
+      // Update tab buttons
+      const tabButtons = document.querySelectorAll('.tab');
+      tabButtons.forEach(btn => {
+        if (btn.textContent.toLowerCase().replace(/\s+/g, '-') === tabName) {
+          btn.classList.add('active');
+        }
+      });
+
+      // Refresh costs if switching to costs tab and we have a current project
+      if (tabName === 'costs' && currentProjectId) {
+        renderCosts(currentProjectId);
+      }
+      
+      // Refresh forecast if switching to forecast tab and we have a current project
+      if (tabName === 'forecast' && currentProjectId) {
+        updateForecastMetrics(currentProjectId);
+      }
+    }
+
+    // Store current project ID
+    let currentProjectId = null;
+
+    // Render costs list
+    function renderCosts(projectId) {
+      const project = projects[projectId];
+      const costsList = document.querySelector('#tab-costs .list');
+      if (!costsList || !project) return;
+
+      if (!project.costs || project.costs.length === 0) {
+        costsList.innerHTML = '<li class="list-item"><p class="text-slate-600 py-4">No costs yet.</p></li>';
+        return;
+      }
+
+      costsList.innerHTML = project.costs.map(cost => `
+        <li class="list-item" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 0;">
+          <div>
+            <span class="font-medium text-slate-900">${cost.category}</span>
+            ${cost.vendor ? `<span class="text-slate-500 text-sm" style="margin-left: 0.5rem;">· ${cost.vendor}</span>` : ''}
+            <p class="text-sm text-slate-600">${cost.description || '—'}</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="font-medium">${cost.amount}</span>
+            <span class="text-sm text-slate-500">${cost.date}</span>
+          </div>
+        </li>
+      `).join('');
+    }
+
+    // Update forecast metrics
+    function updateForecastMetrics(projectId) {
+      const project = projects[projectId];
+      if (!project) return;
+
+      const forecastMetrics = document.querySelectorAll('#tab-forecast .card-content p');
+      if (forecastMetrics.length >= 4) {
+        forecastMetrics[0].innerHTML = `<span class="text-slate-600">Cost to date:</span> <span class="font-medium">${project.costToDate}</span>`;
+        forecastMetrics[1].innerHTML = `<span class="text-slate-600">Burn rate:</span> <span class="font-medium">${project.burnRate}</span>`;
+        forecastMetrics[2].innerHTML = `<span class="text-slate-600">Remaining budget:</span> <span class="font-medium">${project.remaining}</span>`;
+        const projectedTotal = project.totalBudget;
+        forecastMetrics[3].innerHTML = `<span class="text-slate-600">Projected total:</span> <span class="font-medium">${projectedTotal}</span>`;
+      }
+    }
+
+    // Project detail
+    function showProjectDetail(projectId) {
+      currentProjectId = projectId;
+      const project = projects[projectId];
+      if (project) {
+        document.getElementById('project-name').textContent = project.name;
+        document.getElementById('project-description').textContent = project.description;
+        
+        // Update stats
+        const stats = document.querySelectorAll('#tab-overview .stat-value');
+        if (stats.length >= 4) {
+          stats[0].textContent = project.totalBudget;
+          stats[1].textContent = project.costToDate;
+          stats[2].textContent = project.remaining;
+          stats[3].textContent = project.burnRate;
+        }
+
+        // Update costs
+        renderCosts(projectId);
+        
+        // Update forecast
+        updateForecastMetrics(projectId);
+      }
+      
+      showView('project-detail');
+      showTab('overview');
+    }
+
+    // AI Insight
+    function showAIInsight() {
+      const summary = document.getElementById('ai-summary');
+      if (summary) {
+        summary.style.display = summary.style.display === 'none' ? 'block' : 'none';
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      showView('dashboard');
+    });
+  </script>
+</body>
+</html>

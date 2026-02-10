@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function hasProjectAccess(projectId) {
+      let project = get(/databases/$(database)/documents/projects/$(projectId));
+      return request.auth != null && project.data.ownerId == request.auth.uid;
+    }
+
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    match /projects/{projectId} {
+      allow read, update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    match /costs/{costId} {
+      allow read, update, delete: if hasProjectAccess(resource.data.projectId);
+      allow create: if request.auth != null && hasProjectAccess(request.resource.data.projectId);
+    }
+
+    match /changeOrders/{changeOrderId} {
+      allow read, update, delete: if hasProjectAccess(resource.data.projectId);
+      allow create: if request.auth != null && hasProjectAccess(request.resource.data.projectId);
+    }
+
+    match /forecasts/{forecastId} {
+      allow read, update, delete: if hasProjectAccess(resource.data.projectId);
+      allow create: if request.auth != null && hasProjectAccess(request.resource.data.projectId);
+    }
+
+    match /auditLogs/{logId} {
+      allow read, delete: if hasProjectAccess(resource.data.projectId);
+      allow create: if request.auth != null && hasProjectAccess(request.resource.data.projectId);
+    }
+  }
+}
