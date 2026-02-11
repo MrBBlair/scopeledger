@@ -60,15 +60,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false)
         return
       }
-      const p = await getProfile(u.uid)
-      if (!p) {
-        await createProfile(u.uid, u.email ?? '', u.displayName ?? '', u.photoURL ?? null)
-        const next = await getProfile(u.uid)
-        setProfile(next)
-      } else {
-        setProfile(p)
+      try {
+        // Ensure Firestore requests use a current auth token.
+        await u.getIdToken()
+        const p = await getProfile(u.uid)
+        if (!p) {
+          await createProfile(u.uid, u.email ?? '', u.displayName ?? '', u.photoURL ?? null)
+          const next = await getProfile(u.uid)
+          setProfile(next)
+        } else {
+          setProfile(p)
+        }
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     })
     return () => unsub()
   }, [])

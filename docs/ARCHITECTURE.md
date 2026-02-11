@@ -34,7 +34,7 @@ See `firestore.rules`. Summary:
 
 - **Usage:** Budget insights, forecast risk, monthly summaries, natural-language Q&A.
 - **Behaviour:** Optional, explainable, **never** mutates data. All suggestions are advisory; user explicitly applies changes.
-- **Config:** `VITE_GEMINI_API_KEY` (client-side; consider backend proxy for higher sensitivity).
+- **Flow:** Copy-to-Gemini—prompt copied to clipboard, user pastes in Gemini and pastes response back. No API key.
 
 ## Email (Postmark)
 

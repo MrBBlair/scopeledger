@@ -8,6 +8,7 @@
 |-------|------|-------------|
 | `email` | string | User email |
 | `displayName` | string | Display name |
+| `businessName` | string | Company or organization name |
 | `photoURL` | string \| null | Avatar URL |
 | `onboardingCompleted` | boolean | Onboarding finished |
 | `createdAt` | timestamp | |
@@ -32,11 +33,13 @@
 | `startDate` | string | ISO date |
 | `endDate` | string \| null | |
 | `baselineLockedAt` | timestamp \| null | Locked after creation |
+| `collaboratorIds` | string[] | Firebase UIDs of collaborators (default `[]`) |
+| `pendingInvites` | string[] | Email addresses with pending invites (default `[]`) |
 | `createdAt` | timestamp | |
 | `updatedAt` | timestamp | |
 
-- **Indexes:** Composite on `(ownerId, updatedAt desc)`.
-- **Security:** Read/write only when `ownerId == request.auth.uid`.
+- **Indexes:** Composite on `(ownerId, updatedAt desc)`, `(collaboratorIds, updatedAt desc)`, `(pendingInvites, updatedAt desc)`.
+- **Security:** Read when owner, collaborator, or `request.auth.token.email` in `pendingInvites`. Write (create/update/delete) when owner or collaborator.
 
 ---
 

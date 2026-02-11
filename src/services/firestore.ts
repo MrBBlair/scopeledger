@@ -13,6 +13,8 @@ import {
   limit,
   serverTimestamp,
   writeBatch,
+  arrayUnion,
+  arrayRemove,
   type Timestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
@@ -42,16 +44,19 @@ export async function getProfile(uid: string): Promise<UserProfile | null> {
     uid: snap.id,
     email: d.email ?? '',
     displayName: d.displayName ?? '',
+    businessName: d.businessName ?? '',
     photoURL: d.photoURL ?? null,
     createdAt: ts(d.createdAt) ?? '',
     updatedAt: ts(d.updatedAt) ?? '',
     onboardingCompleted: d.onboardingCompleted ?? false,
+    welcomeSuppressed: d.welcomeSuppressed ?? false,
+    emailOptOut: d.emailOptOut ?? false,
   }
 }
 
 export async function setProfile(
   uid: string,
-  data: Partial<Pick<UserProfile, 'displayName' | 'photoURL' | 'onboardingCompleted' | 'email'>>
+  data: Partial<Pick<UserProfile, 'displayName' | 'businessName' | 'photoURL' | 'onboardingCompleted' | 'email' | 'welcomeSuppressed' | 'emailOptOut'>>
 ): Promise<void> {
   const ref = doc(db, 'users', uid)
   const existing = await getDoc(ref)
@@ -77,9 +82,55 @@ export async function createProfile(uid: string, email: string, displayName: str
     displayName,
     photoURL,
     onboardingCompleted: false,
+    welcomeSuppressed: false,
+    emailOptOut: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }, { merge: true })
+}
+
+// ─── Admin (config/roles + list all) ──────────────────────────────────────────
+
+export interface AdminConfig {
+  adminUids: string[]
+}
+
+const CONFIG_ROLES = 'config/roles'
+
+export async function getAdminConfig(): Promise<AdminConfig | null> {
+  const snap = await getDoc(doc(db, CONFIG_ROLES))
+  if (!snap.exists()) return null
+  const d = snap.data()
+  const list = d.adminUids
+  return { adminUids: Array.isArray(list) ? list : [] }
+}
+
+export async function setAdminUids(adminUids: string[]): Promise<void> {
+  await setDoc(doc(db, CONFIG_ROLES), { adminUids }, { merge: true })
+}
+
+/** Admin only: delete a user profile from Firestore. User can still exist in Firebase Auth. */
+export async function deleteProfile(uid: string): Promise<void> {
+  await deleteDoc(doc(db, 'users', uid))
+}
+
+export async function listAllUsers(): Promise<UserProfile[]> {
+  const snap = await getDocs(col('users'))
+  return snap.docs.map((d) => {
+    const x = d.data()
+    return {
+      uid: d.id,
+      email: (x.email as string) ?? '',
+      displayName: (x.displayName as string) ?? '',
+      businessName: (x.businessName as string) ?? '',
+      photoURL: (x.photoURL as string | null) ?? null,
+      createdAt: ts(x.createdAt as Timestamp) ?? '',
+      updatedAt: ts(x.updatedAt as Timestamp) ?? '',
+      onboardingCompleted: (x.onboardingCompleted as boolean) ?? false,
+      welcomeSuppressed: (x.welcomeSuppressed as boolean) ?? false,
+      emailOptOut: (x.emailOptOut as boolean) ?? false,
+    } as UserProfile
+  })
 }
 
 // ─── Projects ─────────────────────────────────────────────────────────────────
@@ -91,54 +142,70 @@ export async function getProjects(ownerId: string): Promise<Project[]> {
     orderBy('updatedAt', 'desc')
   )
   const snap = await getDocs(q)
-  return snap.docs.map((d) => {
-    const x = d.data()
-    return {
-      id: d.id,
-      ownerId: x.ownerId,
-      name: x.name,
-      description: x.description ?? '',
-      status: x.status ?? 'active',
-      baselineBudget: x.baselineBudget ?? 0,
-      overheadPercent: x.overheadPercent ?? 0,
-      overheadAmount: x.overheadAmount ?? 0,
-      currency: x.currency ?? 'USD',
-      startDate: x.startDate ?? '',
-      endDate: x.endDate ?? null,
-      createdAt: ts(x.createdAt) ?? '',
-      updatedAt: ts(x.updatedAt) ?? '',
-      baselineLockedAt: ts(x.baselineLockedAt) ?? null,
-    } as Project
-  })
+  return snap.docs.map((d) => projectFromData(d.id, d.data()))
+}
+
+function projectFromData(id: string, x: Record<string, unknown>): Project {
+  return {
+    id,
+    ownerId: x.ownerId as string,
+    name: x.name as string,
+    description: (x.description as string) ?? '',
+    status: (x.status as Project['status']) ?? 'active',
+    baselineBudget: (x.baselineBudget as number) ?? 0,
+    overheadPercent: (x.overheadPercent as number) ?? 0,
+    overheadAmount: (x.overheadAmount as number) ?? 0,
+    currency: (x.currency as string) ?? 'USD',
+    startDate: (x.startDate as string) ?? '',
+    endDate: (x.endDate as string) ?? null,
+    createdAt: ts(x.createdAt as Timestamp) ?? '',
+    updatedAt: ts(x.updatedAt as Timestamp) ?? '',
+    baselineLockedAt: ts(x.baselineLockedAt as Timestamp) ?? null,
+    collaboratorIds: (x.collaboratorIds as string[]) ?? [],
+    pendingInvites: (x.pendingInvites as string[]) ?? [],
+  } as Project
+}
+
+export async function getProjectsSharedWith(uid: string): Promise<Project[]> {
+  const q = query(
+    col('projects'),
+    where('collaboratorIds', 'array-contains', uid),
+    orderBy('updatedAt', 'desc')
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => projectFromData(d.id, d.data()))
+}
+
+export async function getProjectsWithPendingInvite(email: string): Promise<Project[]> {
+  const q = query(
+    col('projects'),
+    where('pendingInvites', 'array-contains', email),
+    orderBy('updatedAt', 'desc')
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => projectFromData(d.id, d.data()))
 }
 
 export async function getProject(projectId: string): Promise<Project | null> {
   const snap = await getDoc(doc(db, 'projects', projectId))
   if (!snap.exists()) return null
-  const x = snap.data()
-  return {
-    id: snap.id,
-    ownerId: x.ownerId,
-    name: x.name,
-    description: x.description ?? '',
-    status: x.status ?? 'active',
-    baselineBudget: x.baselineBudget ?? 0,
-    overheadPercent: x.overheadPercent ?? 0,
-    overheadAmount: x.overheadAmount ?? 0,
-    currency: x.currency ?? 'USD',
-    startDate: x.startDate ?? '',
-    endDate: x.endDate ?? null,
-    createdAt: ts(x.createdAt) ?? '',
-    updatedAt: ts(x.updatedAt) ?? '',
-    baselineLockedAt: ts(x.baselineLockedAt) ?? null,
-  } as Project
+  return projectFromData(snap.id, snap.data())
 }
 
-export async function createProject(ownerId: string, data: Omit<Project, 'id' | 'ownerId' | 'createdAt' | 'updatedAt' | 'baselineLockedAt'>): Promise<string> {
+/** Admin only: list all projects (requires Firestore config/roles with your UID in adminUids). */
+export async function listAllProjects(): Promise<Project[]> {
+  const q = query(col('projects'), orderBy('updatedAt', 'desc'))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => projectFromData(d.id, d.data()))
+}
+
+export async function createProject(ownerId: string, data: Omit<Project, 'id' | 'ownerId' | 'createdAt' | 'updatedAt' | 'baselineLockedAt' | 'collaboratorIds' | 'pendingInvites'>): Promise<string> {
   const ref = await addDoc(col('projects'), {
     ownerId,
     ...data,
     baselineLockedAt: null,
+    collaboratorIds: [],
+    pendingInvites: [],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
@@ -161,6 +228,87 @@ export async function lockBaseline(projectId: string): Promise<void> {
     baselineLockedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
+}
+
+/** Emails to store for one invite (lowercase + original if different) so Firestore rules match regardless of auth token case. */
+function inviteEmailVariants(email: string): string[] {
+  const trimmed = email.trim()
+  const lower = trimmed.toLowerCase()
+  return lower === trimmed ? [lower] : [lower, trimmed]
+}
+
+export async function addCollaborator(projectId: string, email: string): Promise<void> {
+  const ref = doc(db, 'projects', projectId)
+  const variants = inviteEmailVariants(email)
+  await updateDoc(ref, {
+    pendingInvites: arrayUnion(...variants),
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function removeCollaborator(projectId: string, uid: string): Promise<void> {
+  const ref = doc(db, 'projects', projectId)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return
+  const collab = (snap.data().collaboratorIds as string[]) ?? []
+  const next = collab.filter((id) => id !== uid)
+  await updateDoc(ref, { collaboratorIds: next, updatedAt: serverTimestamp() })
+}
+
+export async function removePendingInvite(projectId: string, email: string): Promise<void> {
+  const ref = doc(db, 'projects', projectId)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return
+  const pending = (snap.data().pendingInvites as string[]) ?? []
+  const normalized = email.toLowerCase().trim()
+  const toRemove = pending.filter((e) => e.toLowerCase().trim() === normalized)
+  if (toRemove.length === 0) return
+  await updateDoc(ref, {
+    pendingInvites: arrayRemove(...toRemove),
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function acceptInvite(projectId: string, uid: string, email: string): Promise<void> {
+  const ref = doc(db, 'projects', projectId)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return
+  const pending = (snap.data().pendingInvites as string[]) ?? []
+  const normalized = email.toLowerCase().trim()
+  const toRemove = pending.filter((e) => e.toLowerCase().trim() === normalized)
+  await updateDoc(ref, {
+    collaboratorIds: arrayUnion(uid),
+    ...(toRemove.length > 0 && { pendingInvites: arrayRemove(...toRemove) }),
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function declineInvite(projectId: string, email: string): Promise<void> {
+  await removePendingInvite(projectId, email)
+}
+
+/** Delete all documents in a collection where projectId matches (batches of 500). */
+async function deleteCollectionByProjectId(
+  collectionName: 'costs' | 'changeOrders' | 'forecasts' | 'auditLogs',
+  projectId: string
+): Promise<void> {
+  const batchSize = 500
+  let snap = await getDocs(query(col(collectionName), where('projectId', '==', projectId)))
+  while (!snap.empty) {
+    const batch = writeBatch(db)
+    snap.docs.slice(0, batchSize).forEach((d) => batch.delete(d.ref))
+    await batch.commit()
+    if (snap.docs.length <= batchSize) break
+    snap = await getDocs(query(col(collectionName), where('projectId', '==', projectId)))
+  }
+}
+
+export async function deleteProject(projectId: string): Promise<void> {
+  await deleteCollectionByProjectId('auditLogs', projectId)
+  await deleteCollectionByProjectId('costs', projectId)
+  await deleteCollectionByProjectId('changeOrders', projectId)
+  await deleteCollectionByProjectId('forecasts', projectId)
+  await deleteDoc(doc(db, 'projects', projectId))
 }
 
 // ─── Costs ────────────────────────────────────────────────────────────────────

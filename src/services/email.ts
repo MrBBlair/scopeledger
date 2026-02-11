@@ -19,11 +19,12 @@ async function callEmailAPI(payload: Record<string, unknown>): Promise<void> {
 }
 
 export async function sendWelcomeEmail(to: string, name: string): Promise<void> {
-  await callEmailAPI({ type: 'welcome', to, name })
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
+  await callEmailAPI({ type: 'welcome', to, name, tag: 'welcome', appUrl })
 }
 
 export async function sendPasswordResetEmail(to: string, resetLink: string): Promise<void> {
-  await callEmailAPI({ type: 'password_reset', to, resetLink })
+  await callEmailAPI({ type: 'password_reset', to, resetLink, tag: 'password_reset' })
 }
 
 export async function sendNotificationEmail(
@@ -31,5 +32,21 @@ export async function sendNotificationEmail(
   subject: string,
   body: string
 ): Promise<void> {
-  await callEmailAPI({ type: 'notification', to, subject, body })
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
+  await callEmailAPI({ type: 'notification', to, subject, body, tag: 'notification', appUrl })
+}
+
+export async function sendProjectInviteEmail(
+  to: string,
+  projectName: string,
+  appUrl: string
+): Promise<void> {
+  const subject = `You've been invited to ${projectName}`
+  const body = `
+    <p>You've been invited to collaborate on <strong>${projectName}</strong> in ScopeLedger.</p>
+    <p><a href="${appUrl}/app/projects">View your projects</a> to accept or decline the request.</p>
+    <p>If you don't already have an account, please create one using the same email address this invite was sent to. You can update your email later in Settings.</p>
+    <p>— ScopeLedger</p>
+  `
+  await callEmailAPI({ type: 'notification', to, subject, body, tag: 'project_invite', appUrl })
 }

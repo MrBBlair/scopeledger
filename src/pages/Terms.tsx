@@ -22,7 +22,7 @@ export function Terms() {
         <CardContent className="prose prose-slate max-w-none">
           <p>
             The Service provides project budgeting, cost tracking, change-order management, and forecasting tools.
-            AI-powered features are advisory only and do not modify your data without your explicit action.
+            Insight features are advisory only and do not modify your data without your explicit action.
           </p>
         </CardContent>
       </Card>

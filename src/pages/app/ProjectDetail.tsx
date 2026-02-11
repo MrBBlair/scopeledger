@@ -1,17 +1,49 @@
-import { useState, useMemo } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { Link, useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 import { useProjectDetail } from '@/hooks/useProjectDetail'
-import { getAIInsight } from '@/ai/gemini'
+import { useProjects } from '@/hooks/useProjects'
+import { getProjectInsight } from '@/utils/projectInsight'
+import {
+  addCollaborator,
+  removeCollaborator,
+  removePendingInvite,
+  getProfile,
+} from '@/services/firestore'
+import { sendProjectInviteEmail } from '@/services/email'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
-import { formatCurrency, formatDate } from '@/utils/format'
+import { formatCurrency, formatDate, formatDateTimeLocal } from '@/utils/format'
+import { parseProjectSlug, isLegacyProjectId, resolveSlugToProjectId, projectPath, projectEditPath } from '@/utils/projectPath'
 import { cn } from '@/utils/cn'
 
-type Tab = 'overview' | 'costs' | 'change-orders' | 'forecast' | 'logs'
+type Tab = 'overview' | 'costs' | 'change-orders' | 'forecast' | 'logs' | 'share'
+
+const ACTION_LABELS: Record<string, string> = {
+  cost_added: 'Cost added',
+  cost_edited: 'Cost edited',
+  cost_deleted: 'Cost deleted',
+  change_order_added: 'Change order added',
+  change_order_approved: 'Change order approved',
+  change_order_rejected: 'Change order rejected',
+  forecast_updated: 'Forecast updated',
+  project_created: 'Project created',
+  project_updated: 'Project updated',
+  project_archived: 'Project archived',
+}
+
+function formatActionLabel(action: string, projectName?: string, metadata?: Record<string, unknown>): string {
+  const base = ACTION_LABELS[action] ?? action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const name = (metadata?.projectName as string) ?? projectName
+  if (name && ['project_created', 'project_updated', 'project_archived'].includes(action)) {
+    return `${base}: ${name}`
+  }
+  return base
+}
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -19,16 +51,24 @@ const tabs: { id: Tab; label: string }[] = [
   { id: 'change-orders', label: 'Change orders' },
   { id: 'forecast', label: 'Forecast' },
   { id: 'logs', label: 'Logs' },
+  { id: 'share', label: 'Share' },
 ]
 
 export function ProjectDetail() {
-  const { id } = useParams<{ id: string }>()
+  const { slug } = useParams<{ slug: string }>()
+  const { projects, remove } = useProjects()
+  const rawId = slug
+    ? parseProjectSlug(slug) ?? (isLegacyProjectId(slug) ? slug : resolveSlugToProjectId(slug, projects))
+    : undefined
+  const id = rawId ?? undefined
+  const navigate = useNavigate()
+  const { user, profile } = useAuth()
   const detail = useProjectDetail(id)
   const [tab, setTab] = useState<Tab>('overview')
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [costModal, setCostModal] = useState(false)
   const [changeOrderModal, setChangeOrderModal] = useState(false)
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [costForm, setCostForm] = useState({
     amount: '',
     category: '',
@@ -42,6 +82,10 @@ export function ProjectDetail() {
     amount: '',
     description: '',
   })
+  const [shareEmail, setShareEmail] = useState('')
+  const [shareLoading, setShareLoading] = useState(false)
+  const [collaboratorNames, setCollaboratorNames] = useState<Record<string, string>>({})
+  const [logUserNames, setLogUserNames] = useState<Record<string, string>>({})
 
   const {
     project,
@@ -50,6 +94,10 @@ export function ProjectDetail() {
     logs,
     loading,
     error,
+    pendingInvite,
+    handleAcceptInvite,
+    handleDeclineInvite,
+    refresh,
     costToDate,
     totalBudget,
     remainingBudget,
@@ -70,6 +118,26 @@ export function ProjectDetail() {
     const days = (last - first) / (24 * 60 * 60 * 1000) || 1
     return costToDate / days
   }, [costs, costToDate])
+
+  const completionForecast = useMemo(() => {
+    const endDate = project?.endDate
+    if (!endDate) return null
+    const end = new Date(endDate)
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    end.setHours(0, 0, 0, 0)
+    const daysUntilEnd = Math.ceil((end.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+    if (daysUntilEnd <= 0) return { completed: true, endDate }
+    const projectedCostAtCompletion = costToDate + burnRate * daysUntilEnd
+    const projectedRemaining = totalBudget - projectedCostAtCompletion
+    return {
+      completed: false,
+      endDate,
+      daysUntilEnd,
+      projectedCostAtCompletion,
+      projectedRemaining,
+    }
+  }, [project?.endDate, costToDate, burnRate, totalBudget])
 
   const handleAddCost = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -108,28 +176,101 @@ export function ProjectDetail() {
     setCoForm({ type: 'positive', amount: '', description: '' })
   }
 
-  const handleAIHealth = async () => {
-    if (!id || !project) return
-    setAiLoading(true)
-    setAiSummary(null)
+  const projectInsight = useMemo(
+    () => getProjectInsight(costToDate, totalBudget, remainingBudget, burnRate, costs.length),
+    [costToDate, totalBudget, remainingBudget, burnRate, costs.length]
+  )
+
+  const isOwner = project && user?.uid === project.ownerId
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!id || !shareEmail.trim() || !project) return
+    setShareLoading(true)
     try {
-      const res = await getAIInsight(
-        { projectId: id, prompt: 'health' },
-        {
-          costToDate,
-          totalBudget,
-          remainingBudget,
-          burnRate,
-          baselineBudget: project.baselineBudget,
-        }
-      )
-      setAiSummary(res.summary)
-    } catch {
-      setAiSummary('Unable to load AI insight.')
+      await addCollaborator(id, shareEmail.trim())
+      try {
+        const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
+        await sendProjectInviteEmail(shareEmail.trim(), project.name, appUrl)
+      } catch {
+        // Non-blocking
+      }
+      setShareEmail('')
+      await refresh()
     } finally {
-      setAiLoading(false)
+      setShareLoading(false)
     }
   }
+
+  const handleRemoveCollaborator = async (uid: string) => {
+    if (!id) return
+    await removeCollaborator(id, uid)
+    await refresh()
+  }
+
+  const handleRevokeInvite = async (email: string) => {
+    if (!id) return
+    await removePendingInvite(id, email)
+    await refresh()
+  }
+
+  const handleDeleteProject = async () => {
+    if (!id) return
+    setDeleteLoading(true)
+    try {
+      await remove(id)
+      setDeleteConfirmOpen(false)
+      navigate('/app/projects')
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (project && id) {
+      const prettyPath = projectPath(project)
+      if (window.location.pathname !== prettyPath) {
+        navigate(prettyPath, { replace: true })
+      }
+    }
+  }, [project, id, navigate])
+
+  useEffect(() => {
+    if (tab !== 'share' || !project?.collaboratorIds?.length) return
+    const load = async () => {
+      const names: Record<string, string> = {}
+      for (const uid of project.collaboratorIds ?? []) {
+        try {
+          const p = await getProfile(uid)
+          if (p) names[uid] = p.displayName || p.email || 'Collaborator'
+          else names[uid] = 'Collaborator'
+        } catch {
+          names[uid] = 'Collaborator'
+        }
+      }
+      setCollaboratorNames(names)
+    }
+    load()
+  }, [tab, project?.collaboratorIds])
+
+  useEffect(() => {
+    if (tab !== 'logs' || logs.length === 0) return
+    const uids = [...new Set(logs.map((l) => l.userId))]
+    const load = async () => {
+      const names: Record<string, string> = {}
+      for (const uid of uids) {
+        try {
+          const p = await getProfile(uid)
+          if (p) names[uid] = p.displayName || p.email || 'User'
+          else names[uid] = 'User'
+        } catch {
+          names[uid] = 'User'
+        }
+      }
+      setLogUserNames(names)
+    }
+    load()
+  }, [tab, logs])
 
   const handleSaveForecast = async () => {
     const version = (latestForecast?.version ?? 0) + 1
@@ -140,23 +281,23 @@ export function ProjectDetail() {
       remainingBudget,
       projectedTotal: costToDate + remainingBudget,
       manualOverride: null,
-      aiSummary: aiSummary ?? null,
+      aiSummary: projectInsight,
     })
   }
 
   const exportLogsCsv = () => {
-    const headers = ['Date', 'Action', 'User', 'Metadata']
+    const headers = ['Date', 'Action', 'User']
     const rows = logs.map((l) => [
-      l.createdAt,
-      l.action,
-      l.userId,
-      JSON.stringify(l.metadata),
+      formatDateTimeLocal(l.createdAt),
+      formatActionLabel(l.action, project?.name, l.metadata),
+      logUserNames[l.userId] ?? l.userId,
     ])
     const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `project-${id}-logs.csv`
+    const safeName = (project?.name ?? 'project').replace(/[^a-zA-Z0-9\u00C0-\u024F\s-]/g, '').replace(/\s+/g, '-') || 'project'
+    a.download = `${safeName}-logs.csv`
     a.click()
     URL.revokeObjectURL(a.href)
   }
@@ -178,6 +319,29 @@ export function ProjectDetail() {
 
   return (
     <div className="space-y-6">
+      {pendingInvite && project && (
+        <div className="rounded-xl bg-brand-50 border border-brand-200 p-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-brand-800 font-medium">
+            You&apos;ve been invited to collaborate on this project.
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleAcceptInvite}>
+              Accept
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                await handleDeclineInvite()
+                navigate('/app/projects')
+              }}
+            >
+              Decline
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Link to="/app/projects" className="text-sm text-brand-600 hover:underline mb-1 inline-block">
@@ -186,11 +350,22 @@ export function ProjectDetail() {
           <h1 className="font-display text-2xl font-bold text-slate-900">{project.name}</h1>
           <p className="text-slate-600 text-sm">{project.description || 'No description'}</p>
         </div>
-        <Link to={`/app/projects/${id}/edit`}>
-          <Button variant="secondary">Edit project</Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to={project ? projectEditPath(project) : `/app/projects/${id}/edit`}>
+            <Button variant="secondary">Edit project</Button>
+          </Link>
+          {isOwner && (
+            <Button
+              variant="danger"
+              onClick={() => setDeleteConfirmOpen(true)}
+            >
+              Delete project
+            </Button>
+          )}
+        </div>
       </div>
 
+      {!pendingInvite && (
       <div className="flex gap-2 overflow-x-auto pb-2" role="tablist">
         {tabs.map((t) => (
           <button
@@ -207,6 +382,7 @@ export function ProjectDetail() {
           </button>
         ))}
       </div>
+      )}
 
       {tab === 'overview' && (
         <div className="space-y-6">
@@ -238,15 +414,10 @@ export function ProjectDetail() {
           </div>
           <Card>
             <CardHeader>
-              <h2 className="font-semibold text-slate-900">AI insight</h2>
+              <h2 className="font-semibold text-slate-900">Project insight</h2>
             </CardHeader>
             <CardContent>
-              <Button variant="secondary" onClick={handleAIHealth} loading={aiLoading}>
-                Explain this project&apos;s financial health
-              </Button>
-              {aiSummary && (
-                <div className="mt-4 p-4 rounded-xl bg-slate-50 text-slate-700">{aiSummary}</div>
-              )}
+              <p className="text-slate-700">{projectInsight}</p>
             </CardContent>
           </Card>
         </div>
@@ -336,18 +507,147 @@ export function ProjectDetail() {
               <p><span className="text-slate-600">Projected total:</span> {formatCurrency(costToDate + remainingBudget)}</p>
             </CardContent>
           </Card>
+
+          {/* Projected at completion date */}
+          <Card>
+            <CardHeader>
+              <h2 className="font-semibold text-slate-900">Projected at completion</h2>
+            </CardHeader>
+            <CardContent>
+              {!completionForecast ? (
+                <p className="text-slate-600">
+                  Set a project end date in Edit project to see where the budget will be at completion.
+                </p>
+              ) : completionForecast.completed ? (
+                <p className="text-slate-600">
+                  Project completion date: {formatDate(completionForecast.endDate)}. Project is past its end date.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-slate-600">
+                    Completion date: <span className="font-medium text-slate-900">{formatDate(completionForecast.endDate)}</span>
+                    {' · '}
+                    {completionForecast.daysUntilEnd} day{completionForecast.daysUntilEnd !== 1 ? 's' : ''} remaining
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div>
+                      <p className="text-sm text-slate-600">Projected cost at completion</p>
+                      <p className="text-xl font-semibold text-slate-900">
+                        {formatCurrency(completionForecast.projectedCostAtCompletion as number)}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Cost to date + burn rate × {completionForecast.daysUntilEnd} days
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-600">Projected profit</p>
+                      <p className={cn(
+                        'text-xl font-semibold',
+                        (completionForecast.projectedRemaining ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'
+                      )}>
+                        {formatCurrency(completionForecast.projectedRemaining ?? 0)}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Total budget − projected cost
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <h2 className="font-semibold text-slate-900">Save snapshot</h2>
-              <Button onClick={handleSaveForecast}>Save forecast</Button>
+              <h2 className="font-semibold text-slate-900">Share forecast</h2>
+              <Button onClick={handleSaveForecast}>Share forecast</Button>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-slate-600">
-                Store current metrics as a versioned snapshot. AI summary is included if you ran &quot;Explain financial health&quot; in Overview.
+                Share the current forecast via email. The project insight from Overview is included.
               </p>
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {tab === 'share' && project && (
+        <Card>
+          <CardHeader>
+            <h2 className="font-semibold text-slate-900">Share project</h2>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <form onSubmit={handleInvite} className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="Email address"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+                className="flex-1"
+              />
+              <Button type="submit" loading={shareLoading} disabled={!shareEmail.trim()}>
+                Send request
+              </Button>
+            </form>
+            <p className="text-sm text-slate-500">
+              They&apos;ll see the request in their Projects list and must accept to get access.
+            </p>
+
+            {(project.collaboratorIds?.length ?? 0) > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-slate-700 mb-2">Collaborators</h3>
+                <ul className="divide-y divide-slate-100">
+                  {(project.collaboratorIds ?? []).map((uid) => (
+                    <li key={uid} className="py-2 flex items-center justify-between">
+                      <span className="text-slate-700">
+                        {collaboratorNames[uid] ?? 'Collaborator'}
+                      </span>
+                      {isOwner && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="!min-h-0 text-red-600"
+                          onClick={() => handleRemoveCollaborator(uid)}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {(project.pendingInvites?.length ?? 0) > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-slate-700 mb-2">Pending requests</h3>
+                <ul className="divide-y divide-slate-100">
+                  {[...new Map((project.pendingInvites ?? []).map((e) => [e.toLowerCase().trim(), e])).values()].map((email) => (
+                    <li key={email} className="py-2 flex items-center justify-between">
+                      <span className="text-slate-600">{email}</span>
+                      {isOwner && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="!min-h-0 text-red-600"
+                          onClick={() => handleRevokeInvite(email)}
+                        >
+                          Revoke
+                        </Button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {(!project.collaboratorIds?.length && !project.pendingInvites?.length) && (
+              <p className="text-sm text-slate-500">
+                No collaborators yet. Send a request by email; they must accept to get access.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {tab === 'logs' && (
@@ -361,18 +661,22 @@ export function ProjectDetail() {
               <p className="text-slate-600 py-4">No log entries yet.</p>
             ) : (
               <ul className="divide-y divide-slate-100">
-                {logs.map((l) => (
-                  <li key={l.id} className="py-2 text-sm">
-                    <span className="text-slate-500">{formatDate(l.createdAt)}</span>
-                    {' · '}
-                    <span className="font-medium">{l.action}</span>
-                    {' · '}
-                    <span className="text-slate-600">{l.userId}</span>
-                    {Object.keys(l.metadata).length > 0 && (
-                      <span className="text-slate-400 ml-1"> {JSON.stringify(l.metadata)}</span>
-                    )}
-                  </li>
-                ))}
+                {logs.map((l) => {
+                  const who = l.userId === user?.uid
+                    ? (profile?.displayName || user?.email || 'You')
+                    : (logUserNames[l.userId] ?? 'Loading…')
+                  return (
+                    <li key={l.id} className="py-2 text-sm">
+                      <span className="text-slate-500">{formatDateTimeLocal(l.createdAt)}</span>
+                      {' · '}
+                      <span className="font-medium">
+                        {formatActionLabel(l.action, project?.name, l.metadata)}
+                      </span>
+                      {' · '}
+                      <span className="text-slate-600">{who}</span>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </CardContent>
@@ -459,6 +763,22 @@ export function ProjectDetail() {
             <Button type="button" variant="ghost" onClick={() => setChangeOrderModal(false)}>Cancel</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={deleteConfirmOpen} onClose={() => !deleteLoading && setDeleteConfirmOpen(false)} title="Delete project">
+        <div className="space-y-4">
+          <p className="text-slate-700">
+            Permanently delete &quot;{project.name}&quot;? All costs, change orders, forecasts, and audit logs will be removed. This cannot be undone.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="danger" onClick={handleDeleteProject} loading={deleteLoading} disabled={deleteLoading}>
+              Delete project
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setDeleteConfirmOpen(false)} disabled={deleteLoading}>
+              Cancel
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

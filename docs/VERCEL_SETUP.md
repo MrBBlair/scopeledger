@@ -51,9 +51,8 @@ Add these in the Vercel project’s **Environment Variables** section. Use the s
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | (from Firebase) | Required |
 | `VITE_FIREBASE_APP_ID` | (from Firebase) | Required |
 | `VITE_ADMIN_UIDS` | (optional) | Comma-separated Firebase UIDs for admin access |
-| `VITE_GEMINI_API_KEY` | (optional) | For AI features |
-| `POSTMARK_API_KEY` | (optional) | For email; from Postmark |
-| `EMAIL_FROM` | (optional) | e.g. `noreply@techephi.com` |
+| `POSTMARK_API_KEY` | (optional) | For email; from Postmark — see [EMAIL_SETUP.md](EMAIL_SETUP.md) |
+| `EMAIL_FROM` | (optional) | e.g. `noreply@yourdomain.com` — must be a verified Postmark sender |
 
 - Set **Environment** to **Production** (and Preview if you want the same vars on preview deployments).
 - Click **Save** after each, or add all and save.
@@ -82,4 +81,4 @@ So that “Sign in with Google” and email auth work on your live URL:
 - The app is live at the Vercel URL.
 - The `/api/email` route works if you set `POSTMARK_API_KEY` and `EMAIL_FROM`; otherwise welcome/password-reset emails won’t send.
 
-To update the site, push to the connected branch (e.g. `main`); Vercel will redeploy automatically.
+To update the site, push to the connected branch (e.g. `main`); Vercel will redeploy automatically. For full Postmark setup, see [EMAIL_SETUP.md](EMAIL_SETUP.md).

@@ -23,7 +23,7 @@ export function OnboardingWelcome() {
         Welcome to ScopeLedger
       </h1>
       <p className="text-slate-600 mb-8">
-        Track project budgets, costs, and change orders. Get AI-powered insights and forecasts—all in one place.
+        Track project budgets, costs, and change orders. Get insights and forecasts—all in one place.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3 justify-center">

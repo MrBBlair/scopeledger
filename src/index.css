@@ -44,4 +44,11 @@
   }
   .focus-ring:focus-visible { --tw-ring-color: var(--color-brand-500); }
   .min-h-touch { min-height: var(--min-height-touch); }
+
+  .bg-app {
+    background-image: url(/background.png);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
 }

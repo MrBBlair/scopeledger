@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Footer } from '@/components/ui/Footer'
+import { PostLoginWelcome } from '@/components/PostLoginWelcome'
 import { cn } from '@/utils/cn'
 
 const nav = [
@@ -16,19 +17,29 @@ export function MainLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [welcomeDismissedThisSession, setWelcomeDismissedThisSession] = useState(false)
+
+  const showWelcome =
+    user && profile && profile.welcomeSuppressed !== true && !welcomeDismissedThisSession
 
   const handleSignOut = async () => {
     await signOut()
     navigate('/')
   }
 
+  if (showWelcome) {
+    return (
+      <PostLoginWelcome onComplete={() => setWelcomeDismissedThisSession(true)} />
+    )
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-app">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="flex h-14 sm:h-16 items-center justify-between gap-4">
             <Link to="/app" className="flex items-center gap-2 shrink-0" aria-label="ScopeLedger home">
-              <img src="/logo.jpeg" alt="ScopeLedger" className="h-9 w-auto" />
+              <img src="/logo.png" alt="ScopeLedger" className="h-[9.6rem] w-auto mt-2" />
             </Link>
 
             {/* Desktop nav */}

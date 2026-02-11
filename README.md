@@ -16,7 +16,7 @@ A **mobile-first, production-grade React web application** for project managemen
 - **Projects:** Create, edit, archive; baseline budget, overhead, lock after creation
 - **Costs:** Add/edit/delete, categories & vendors, manual/automatic deductions, audit logs
 - **Change orders:** Positive/negative, approval flow, budget recalculation
-- **Forecasting:** Cost-to-date, burn rate, remaining budget, AI-assisted insights, versioned snapshots
+- **Forecasting:** Cost-to-date, burn rate, remaining budget, insights, versioned snapshots
 - **Logs:** Immutable audit log, CSV export
 - **Onboarding:** 4-step flow (Welcome → Login → Profile → Tour), skippable
 - **Guides:** User Guide (Settings), Admin Guide (admin-only)
@@ -43,7 +43,6 @@ cp .env.example .env.local
 
 - `VITE_FIREBASE_*` — Firebase project config (see [Firebase Console](https://console.firebase.google.com))
 - `VITE_ADMIN_UIDS` — Comma-separated Firebase UIDs for admin access
-- `VITE_GEMINI_API_KEY` — Google Gemini API key (optional; AI disabled if missing)
 
 **Server (Vercel):** Set in project settings, not in `.env.local`:
 
@@ -72,7 +71,7 @@ npm run dev
 **Follow [docs/VERCEL_SETUP.md](docs/VERCEL_SETUP.md)** for step-by-step instructions:
 
 1. Push the repo to GitHub, then **Import** the project in [Vercel](https://vercel.com).
-2. Add **Environment Variables** (same `VITE_FIREBASE_*` as in `.env.local`, plus optional `VITE_ADMIN_UIDS`, `VITE_GEMINI_API_KEY`, `POSTMARK_API_KEY`, `EMAIL_FROM`).
+2. Add **Environment Variables** (same `VITE_FIREBASE_*` as in `.env.local`, plus optional `VITE_ADMIN_UIDS`, `POSTMARK_API_KEY`, `EMAIL_FROM`).
 3. Deploy; then add your Vercel URL to **Firebase Console → Authentication → Authorized domains**.
 
 ### API routes
@@ -108,7 +107,9 @@ firestore.indexes.json
 - **Architecture:** `docs/ARCHITECTURE.md`
 - **Firestore schema:** `docs/FIRESTORE_SCHEMA.md`
 - **Firebase setup:** `docs/FIREBASE_SETUP.md` — step-by-step to create the Firebase project and deploy rules/indexes.
+- **Email setup:** `docs/EMAIL_SETUP.md` — Postmark configuration for welcome, password reset, and notification emails.
 - **Vercel setup:** `docs/VERCEL_SETUP.md` — step-by-step to deploy on Vercel.
+- **Finish Vercel:** `docs/VERCEL_FINISH.md` — env vars and Firebase authorized domain after the project is on Vercel.
 - **Legal:** Terms and Privacy pages in-app; footer links to Techephi.
 
 ## Scripts

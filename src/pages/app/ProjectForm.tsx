@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
 import type { Project } from '@/types'
+import { parseProjectSlug, isLegacyProjectId, resolveSlugToProjectId, projectPath } from '@/utils/projectPath'
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
@@ -15,9 +16,12 @@ const statusOptions = [
 ]
 
 export function ProjectForm() {
-  const { id } = useParams<{ id: string }>()
+  const { slug } = useParams<{ slug: string }>()
+  const { projects, create, update } = useProjects()
+  const id = slug
+    ? parseProjectSlug(slug) ?? (isLegacyProjectId(slug) ? slug : resolveSlugToProjectId(slug, projects))
+    : undefined
   const navigate = useNavigate()
-  const { create, update } = useProjects()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
@@ -81,10 +85,10 @@ export function ProjectForm() {
       }
       if (isEdit && id) {
         await update(id, payload)
-        navigate(`/app/projects/${id}`)
+        navigate(projectPath({ id, name: payload.name }))
       } else {
         const newId = await create(payload)
-        navigate(`/app/projects/${newId}`)
+        navigate(projectPath({ id: newId, name: payload.name }))
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save')
@@ -176,7 +180,7 @@ export function ProjectForm() {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => (id ? navigate(`/app/projects/${id}`) : navigate('/app/projects'))}
+                onClick={() => (id ? navigate(projectPath({ id, name: form.name })) : navigate('/app/projects'))}
               >
                 Cancel
               </Button>

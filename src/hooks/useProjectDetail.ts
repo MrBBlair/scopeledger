@@ -14,6 +14,8 @@ import {
   rejectChangeOrder,
   addForecastSnapshot,
   addAuditLog,
+  acceptInvite,
+  declineInvite,
 } from '@/services/firestore'
 import type { Project, Cost, ChangeOrder, ForecastSnapshot, AuditLogEntry } from '@/types'
 
@@ -26,20 +28,39 @@ export function useProjectDetail(projectId: string | undefined) {
   const [logs, setLogs] = useState<AuditLogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [pendingInvite, setPendingInvite] = useState(false)
 
   const fetch = useCallback(async () => {
-    if (!projectId) return
+    if (!projectId || !user) return
     setLoading(true)
     setError(null)
+    setPendingInvite(false)
     try {
-      const [p, c, co, f, l] = await Promise.all([
-        getProject(projectId),
+      await user.getIdToken()
+      const p = await getProject(projectId)
+      if (!p) {
+        setProject(null)
+        setLoading(false)
+        return
+      }
+      setProject(p)
+      const userEmail = (user.email ?? '').toLowerCase().trim()
+      const pending = (p.pendingInvites ?? []).map((e: string) => e.toLowerCase().trim())
+      if (userEmail && pending.includes(userEmail)) {
+        setPendingInvite(true)
+        setCosts([])
+        setChangeOrders([])
+        setForecasts([])
+        setLogs([])
+        setLoading(false)
+        return
+      }
+      const [c, co, f, l] = await Promise.all([
         getCosts(projectId),
         getChangeOrders(projectId),
         getForecastSnapshots(projectId, 10),
         getAuditLogs(projectId, 50),
       ])
-      setProject(p ?? null)
       setCosts(c)
       setChangeOrders(co)
       setForecasts(f)
@@ -49,7 +70,7 @@ export function useProjectDetail(projectId: string | undefined) {
     } finally {
       setLoading(false)
     }
-  }, [projectId])
+  }, [projectId, user])
 
   useEffect(() => {
     fetch()
@@ -137,6 +158,20 @@ export function useProjectDetail(projectId: string | undefined) {
     [user, projectId, fetch]
   )
 
+  const handleAcceptInvite = useCallback(async () => {
+    if (!projectId || !user?.email) return
+    await acceptInvite(projectId, user.uid, user.email)
+    await fetch()
+  }, [projectId, user, fetch])
+
+  const handleDeclineInvite = useCallback(async () => {
+    if (!projectId || !user?.email) return
+    await declineInvite(projectId, user.email)
+    setProject(null)
+    setPendingInvite(false)
+    setLoading(false)
+  }, [projectId, user])
+
   return {
     project,
     costs,
@@ -145,6 +180,9 @@ export function useProjectDetail(projectId: string | undefined) {
     logs,
     loading,
     error,
+    pendingInvite,
+    handleAcceptInvite,
+    handleDeclineInvite,
     costToDate,
     totalBudget,
     remainingBudget,

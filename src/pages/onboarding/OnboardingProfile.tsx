@@ -26,10 +26,12 @@ export function OnboardingProfile() {
     try {
       await setProfile(user.uid, { displayName: (displayName.trim() || user.email) ?? 'User' })
       await refreshProfile()
-      try {
-        await sendWelcomeEmail(user.email ?? '', displayName.trim() || 'User')
-      } catch {
-        // Non-blocking
+      if (!profile?.emailOptOut) {
+        try {
+          await sendWelcomeEmail(user.email ?? '', displayName.trim() || 'User')
+        } catch {
+          // Non-blocking
+        }
       }
       next()
     } catch (err) {

@@ -24,3 +24,14 @@ export function formatDateTime(date: string): string {
     minute: '2-digit',
   }).format(new Date(date))
 }
+
+/** Uses the user's locale for date/time display (e.g. in logs). */
+export function formatDateTimeLocal(date: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(date))
+}

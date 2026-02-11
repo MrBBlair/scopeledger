@@ -37,7 +37,7 @@ export function OnboardingTour() {
           <strong>Change orders</strong> — Add positive or negative changes with approval flow.
         </p>
         <p className="text-slate-700">
-          <strong>Forecasting</strong> — Cost-to-date, burn rate, remaining budget. AI-assisted insights available.
+          <strong>Forecasting</strong> — Cost-to-date, burn rate, remaining budget. Insights available in Overview.
         </p>
         <p className="text-slate-700">
           <strong>User Guide</strong> — Find step-by-step help in Settings.

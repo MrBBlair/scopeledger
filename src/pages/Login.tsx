@@ -63,9 +63,11 @@ export function Login() {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <h1 className="font-display text-xl font-semibold text-slate-900">
+    <div className="w-full max-w-md mx-auto flex flex-col items-center gap-6 pt-48">
+      <img src="/logo.png" alt="ScopeLedger" className="fixed left-1/2 -translate-x-1/2 h-[40rem] w-auto z-10 pointer-events-none top-[calc(1rem-2in)]" />
+      <Card className="w-full">
+        <CardHeader>
+          <h1 className="font-display text-xl font-semibold text-slate-900">
           {mode === 'signin' ? 'Sign in' : 'Create account'}
         </h1>
         <p className="text-sm text-slate-600 mt-1">
@@ -163,5 +165,6 @@ export function Login() {
         </p>
       </CardContent>
     </Card>
+    </div>
   )
 }

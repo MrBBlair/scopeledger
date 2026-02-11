@@ -57,7 +57,7 @@ const firebaseConfig = {
 - `VITE_FIREBASE_MESSAGING_SENDER_ID` = `messagingSenderId`
 - `VITE_FIREBASE_APP_ID` = `appId`
 
-Save `.env.local`. You can add `VITE_ADMIN_UIDS` and `VITE_GEMINI_API_KEY` later.
+Save `.env.local`. You can add `VITE_ADMIN_UIDS` later.
 
 ---
 

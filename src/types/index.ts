@@ -4,10 +4,13 @@ export interface UserProfile {
   uid: string
   email: string
   displayName: string
+  businessName?: string
   photoURL: string | null
   createdAt: string
   updatedAt: string
   onboardingCompleted: boolean
+  welcomeSuppressed?: boolean
+  emailOptOut?: boolean
 }
 
 // ─── Project ─────────────────────────────────────────────────────────────────
@@ -29,6 +32,8 @@ export interface Project {
   createdAt: string
   updatedAt: string
   baselineLockedAt: string | null
+  collaboratorIds?: string[]
+  pendingInvites?: string[]
 }
 
 // ─── Cost ────────────────────────────────────────────────────────────────────
