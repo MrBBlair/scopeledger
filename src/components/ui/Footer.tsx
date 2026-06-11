@@ -1,34 +1,25 @@
 import { Link } from 'react-router-dom'
+import { PoweredByTechephiEmblem } from '@/components/brand/PoweredByTechephiEmblem'
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-slate-200 bg-white py-6">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <nav className="flex items-center gap-6" aria-label="Footer">
+    <footer className="mt-auto w-full border-t border-slate-200 bg-white h-[1in] min-h-[1in] flex items-center px-4 sm:px-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-nowrap items-center justify-between gap-4">
+        <nav className="flex items-center gap-4 text-xs text-slate-600 shrink-0" aria-label="Footer">
           <Link
             to="/terms"
-            className="text-sm text-slate-600 hover:text-brand-600 focus-ring rounded"
+            className="whitespace-nowrap hover:text-brand-600 focus-ring rounded transition-colors"
           >
-            Terms & Conditions
+            Terms and Conditions
           </Link>
           <Link
             to="/privacy"
-            className="text-sm text-slate-600 hover:text-brand-600 focus-ring rounded"
+            className="whitespace-nowrap hover:text-brand-600 focus-ring rounded transition-colors"
           >
             Privacy Policy
           </Link>
         </nav>
-        <p className="text-sm text-slate-500 text-center sm:text-right">
-          Powered by{' '}
-          <a
-            href="https://techephi.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-brand-600 hover:underline focus-ring rounded"
-          >
-            Techephi
-          </a>
-        </p>
+        <PoweredByTechephiEmblem />
       </div>
     </footer>
   )

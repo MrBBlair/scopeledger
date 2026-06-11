@@ -52,3 +52,39 @@
     background-repeat: no-repeat;
   }
 }
+
+/* Techephi footer kit — emblem shimmer (MailXTract canonical) */
+.emblem-glisten {
+  position: relative;
+  overflow: hidden;
+}
+
+.emblem-glisten::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 220, 100, 0.4) 45%,
+    rgba(255, 235, 150, 0.55) 50%,
+    rgba(255, 220, 100, 0.4) 55%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: emblem-shine 10s ease-in-out infinite;
+  pointer-events: none;
+  mask-image: radial-gradient(circle, black 0%, black 48%, transparent 50%);
+  -webkit-mask-image: radial-gradient(circle, black 0%, black 48%, transparent 50%);
+}
+
+@keyframes emblem-shine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
